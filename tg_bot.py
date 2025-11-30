@@ -24,7 +24,7 @@ main_kb = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="Добавить задачу"), KeyboardButton(text="Все задачи")],
         [KeyboardButton(text="Получить совет"), KeyboardButton(text="Я выполнил задачу")],
-        [KeyboardButton(text="Профиль")],
+        [KeyboardButton(text="Удалить задания"), KeyboardButton(text="Профиль")],
     ],
     resize_keyboard=True,
     one_time_keyboard=False
@@ -52,9 +52,8 @@ class TaskDone(StatesGroup):
 class UserInfo(StatesGroup):
     get_user_info = State()
 
-
-
-
+class DeleteTask(StatesGroup):
+    waiting_for_id = State()
 
 
 
@@ -322,6 +321,81 @@ async def receive_deadline(message: Message, state: FSMContext):
         f"Задача добавлена"
     )
 
+    await state.clear()
+
+
+
+@dp.message(F.text=="Удалить задания")
+async def get_to_delete_task(message: Message, state: FSMContext):
+
+    await message.answer("Введите номера заданий, которые вы хотите удалить, через запятую (1,2,3)\nЛибо просто одну цифру")
+    await state.set_state(DeleteTask.waiting_for_id)
+
+@dp.message(DeleteTask.waiting_for_id)
+async def delete_task(message: Message, state: FSMContext):
+    if message.from_user is None:
+        await message.answer("Не удадось определить пользователя")
+        return
+    
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"{API_BASE_URL}/tasks/{message.from_user.id}",
+            timeout=10.0
+        )
+
+    tasks = resp.json()
+
+
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"{API_BASE_URL}/tasks/count/{message.from_user.id}",
+            timeout=10.0
+        )
+
+    max_id = resp.json()["max_id"]
+    tasks_to_delete = []
+    tasks_to_delete_DB_id = []
+    deleted = []
+    not_deleted = []
+
+
+
+    if message.text is None:
+        await message.answer("Сообщение не получено")
+        return
+    
+    try:
+        for i in message.text.strip().split(","):
+            if int(i) > 0 and int(i) <= max_id:
+                tasks_to_delete.append(int(i))
+            else: 
+                not_deleted.append(int(i))
+ 
+    except ValueError:
+        await message.answer("Введите номера в правильном виде (1,2,3)")
+        return
+    
+
+    for i, item in enumerate(tasks):
+        if i+1 in tasks_to_delete:
+            tasks_to_delete_DB_id.append(item["id"])
+
+
+
+
+
+
+    
+    for i in tasks_to_delete_DB_id:
+        async with httpx.AsyncClient() as client:
+            await client.delete(
+                f"{API_BASE_URL}/tasks/delete/?item_id={i}",
+                timeout=10.0
+            )
+
+    await message.answer(f"Удалены задания с номером: {tasks_to_delete}\nНе получилось удалить: {not_deleted}")
     await state.clear()
 
 
