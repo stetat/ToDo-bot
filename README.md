@@ -27,11 +27,11 @@ You can now move to your telegram bot and interact with it
 <hr>
 
 <h2>What can this bot do?</h2>
-1. Create a new task
-2. Show all users' tasks 
-3. Update the status for users' tasks
-4. Delete tasks in bulk
-5. Show done/incomplete statistics for the user
-6. Get AI advice for any task ( limited by 5 requests per user per day )
+1. Create a new task'\n'
+2. Show all users' tasks'\n'
+3. Update the status for users' tasks'\n'
+4. Delete tasks in bulk'\n'
+5. Show done/incomplete statistics for the user'\n'
+6. Get AI advice for any task ( limited by 5 requests per user per day )'\n'
 
 
